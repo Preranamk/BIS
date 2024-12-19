@@ -1,0 +1,120 @@
+# 7. Optimization via Gene Expression Algorithms:
+
+
+import random
+
+# Define the optimization problem
+class SmartGridOptimization:
+    def __init__(self):
+        # User input
+        self.demand = float(input("Enter total energy demand (in kWh): "))
+        self.solar_capacity = float(input("Enter solar energy capacity (in kWh): "))
+        self.conventional_capacity = float(input("Enter conventional power plant capacity (in kWh): "))
+        self.solar_cost_per_kWh = float(input("Enter cost per kWh of solar energy ($): "))
+        self.conventional_cost_per_kWh = float(input("Enter cost per kWh of conventional energy ($): "))
+
+        # Algorithm parameters
+        self.population_size = 50
+        self.num_generations = 100
+        self.mutation_rate = 0.1
+        self.crossover_rate = 0.9
+        self.num_genes = 2  # Solar and conventional energy
+        self.best_solution = None
+
+    def generate_initial_population(self):
+        # Generate a random initial population where each individual is a solution (solar, conventional)
+        population = []
+        for _ in range(self.population_size):
+            solar_energy = random.uniform(0, self.solar_capacity)
+            conventional_energy = random.uniform(0, self.conventional_capacity)
+            population.append([solar_energy, conventional_energy])
+        return population
+
+    def fitness_function(self, solution):
+        # Ensure the solution meets the energy demand
+        solar_energy, conventional_energy = solution
+        total_energy = solar_energy + conventional_energy
+
+        # If the total energy is less than the demand, return a high cost (penalty)
+        if total_energy < self.demand:
+            return float('inf')
+
+        # Calculate cost based on the energy sources used
+        solar_cost = solar_energy * self.solar_cost_per_kWh
+        conventional_cost = conventional_energy * self.conventional_cost_per_kWh
+        total_cost = solar_cost + conventional_cost
+        return total_cost
+
+    def select_parents(self, population):
+        # Tournament selection
+        tournament_size = 5
+        selected = random.sample(population, tournament_size)
+        selected = sorted(selected, key=lambda x: self.fitness_function(x))
+        return selected[0], selected[1]
+
+    def crossover(self, parent1, parent2):
+        # One-point crossover
+        if random.random() < self.crossover_rate:
+            crossover_point = random.randint(1, self.num_genes - 1)
+            child1 = parent1[:crossover_point] + parent2[crossover_point:]
+            child2 = parent2[:crossover_point] + parent1[crossover_point:]
+            return child1, child2
+        else:
+            return parent1, parent2
+
+    def mutate(self, individual):
+        # Random mutation within the capacity limits
+        if random.random() < self.mutation_rate:
+            gene_to_mutate = random.randint(0, self.num_genes - 1)
+            if gene_to_mutate == 0:  # Solar energy mutation
+                individual[gene_to_mutate] = random.uniform(0, self.solar_capacity)
+            else:  # Conventional energy mutation
+                individual[gene_to_mutate] = random.uniform(0, self.conventional_capacity)
+        return individual
+
+    def evolve(self):
+        # Initialize population
+        population = self.generate_initial_population()
+
+        for generation in range(self.num_generations):
+            # Sort population by fitness (lower cost is better)
+            population = sorted(population, key=lambda x: self.fitness_function(x))
+
+            # Update best solution
+            current_best = population[0]
+            current_best_fitness = self.fitness_function(current_best)
+            if self.best_solution is None or current_best_fitness < self.fitness_function(self.best_solution):
+                self.best_solution = current_best
+
+            # Create new generation
+            new_population = population[:2]  # Elitism: carry over the top 2 individuals
+
+            # Reproduce and mutate to create the rest of the population
+            while len(new_population) < self.population_size:
+                parent1, parent2 = self.select_parents(population)
+                child1, child2 = self.crossover(parent1, parent2)
+                child1 = self.mutate(child1)
+                child2 = self.mutate(child2)
+                new_population.append(child1)
+                new_population.append(child2)
+
+            population = new_population[:self.population_size]  # Ensure population size
+
+        # Return the best solution found
+        return self.best_solution
+
+# Main execution
+if __name__ == "__main__":
+    optimizer = SmartGridOptimization()
+    best_solution = optimizer.evolve()
+
+    solar_energy, conventional_energy = best_solution
+    total_cost = optimizer.fitness_function(best_solution)
+
+    print("\nBest solution found:")
+    print(f"Solar energy generated: {solar_energy:.2f} kWh")
+    print(f"Conventional energy generated: {conventional_ene5rgy:.2f} kWh")
+    print(f"Total energy generated: {solar_energy + conventional_energy:.2f} kWh")
+    print(f"Total cost: ${total_cost:.2f}")
+
+print("Prerana MK(1bm22cs209)")
