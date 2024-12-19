@@ -1,0 +1,86 @@
+# 6. Parallel Cellular Algorithms and Programs:
+
+
+import random
+import numpy as np
+import multiprocessing
+
+# Step 1: Define the Problem (Pattern Matching)
+def fitness_function(candidate, target):
+    """
+    Calculate the fitness of a candidate string by comparing it with the target string.
+    A lower fitness score means a better match.
+    """
+    return sum(1 for a, b in zip(candidate, target) if a != b)  # Number of mismatches
+
+# Step 2: Initialize Parameters (User Input)
+target = input("Enter the target pattern to search for: ").strip()
+search_space = input("Enter the search space string: ").strip()
+
+# Validate that the search space is large enough to contain the target pattern
+if len(search_space) < len(target):
+    raise ValueError("Search space must be at least as long as the target pattern.")
+
+grid_size = len(search_space) - len(target) + 1  # Number of possible candidates
+pattern_size = len(target)
+iterations = 100  # Number of iterations for convergence
+
+# Step 3: Initialize Population
+# Randomly initialize grid with substrings of the search space that are the same length as the target
+grid = [search_space[i:i + pattern_size] for i in range(grid_size)]
+
+# Step 4: Evaluate Fitness
+def evaluate_fitness(grid, target):
+    return [fitness_function(candidate, target) for candidate in grid]
+
+# Step 5: Update States (Cellular Automata Logic)
+def update_state(grid, fitness_values, target, search_space):
+    new_grid = grid[:]
+    for i in range(len(grid)):
+        # Get neighbors (we're using a simple left-right neighborhood for 1D case)
+        left = grid[i-1] if i > 0 else grid[-1]
+        right = grid[i+1] if i < len(grid)-1 else grid[0]
+
+        # Pick the best neighbor (minimize the fitness function)
+        best_match = min([left, grid[i], right], key=lambda c: fitness_function(c, target))
+
+        # Update the current cell to the best match found
+        new_grid[i] = best_match
+    return new_grid
+
+# Step 6: Parallelize the Evaluation and Update Process
+def parallelize_updates(grid, target, search_space):
+    # Use multiprocessing to evaluate fitness and perform parallel updates
+    with multiprocessing.Pool() as pool:
+        fitness_values = pool.starmap(fitness_function, [(candidate, target) for candidate in grid])
+
+    # Update the grid based on neighbors and fitness
+    new_grid = update_state(grid, fitness_values, target, search_space)
+    return new_grid
+
+# Step 7: Iterate and Update
+best_solution = None
+best_fitness = float('inf')
+
+for iteration in range(iterations):
+    # Parallelize the fitness evaluation and update process
+    grid = parallelize_updates(grid, target, search_space)
+
+    # Track the best solution (minimum fitness)
+    fitness_values = evaluate_fitness(grid, target)
+    current_best_fitness = min(fitness_values)
+    current_best_solution = grid[fitness_values.index(current_best_fitness)]
+
+    if current_best_fitness < best_fitness:
+        best_fitness = current_best_fitness
+        best_solution = current_best_solution
+
+    # Optionally, print progress every few iterations
+    if iteration % 10 == 0:
+        print(f"Iteration {iteration}: Best fitness = {best_fitness}")
+
+# Step 8: Output the Best Solution
+print("\nBest solution found:", best_solution)
+print("Best fitness (number of mismatches):", best_fitness)
+
+print("Prerana MK (1bm22cs209)")
